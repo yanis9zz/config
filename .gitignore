@@ -1,0 +1,12 @@
+**/.env
+**/*token*
+**/*secret*
+**/*credential*
+**/*cookies*
+**/*.key
+**/*.pem
+**/session*
+**/cache/
+**/Cache/
+**/logs/
+**/*.log
