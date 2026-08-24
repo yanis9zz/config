@@ -20,11 +20,9 @@ vim.o.relativenumber = true
 
 -- THE SETTINGS I ADD FOR NOW
 vim.o.autoindent = true
-vim.o.smartindent = true
 vim.o.tabstop = 4
 vim.o.shiftwidth = 4
 vim.o.termguicolors = true
-vim.cmd 'filetype plugin indent on'
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -128,25 +126,20 @@ vim.keymap.set('n', '<C-S-l>', '<C-w>L', { desc = 'Move window to the right' })
 vim.keymap.set('n', '<C-S-j>', '<C-w>J', { desc = 'Move window to the lower' })
 vim.keymap.set('n', '<C-S-k>', '<C-w>K', { desc = 'Move window to the upper' })
 
-local function layout_left_and_right_with_terminal_and_codex()
+local function layout_left_and_right_with_terminal_top()
   vim.cmd 'only' -- reset to single window
   vim.cmd 'vsplit' -- right column
   vim.cmd 'wincmd l'
-  vim.cmd('vertical resize ' .. math.max(28, math.floor(vim.o.columns * 0.38)))
   vim.cmd 'split' -- split right column
   vim.cmd 'wincmd k'
   vim.cmd 'resize 12' -- terminal height
   vim.cmd 'terminal' -- open terminal
   vim.cmd 'wincmd j' -- bottom-right
-  vim.cmd('terminal ' .. vim.fn.shellescape(vim.fn.exepath 'codex'))
-  vim.bo.filetype = 'codex'
-  vim.wo.winfixwidth = true
-  pcall(vim.api.nvim_set_option_value, 'winfixbuf', true, { win = 0 })
-  vim.cmd 'wincmd h' -- back to file
+  vim.cmd 'wincmd h' -- back to left
 end
 
-vim.keymap.set('n', '<leader>ol', layout_left_and_right_with_terminal_and_codex, {
-  desc = '[O]pen [L]ayout (file left, term/codex right)',
+vim.keymap.set('n', '<leader>ol', layout_left_and_right_with_terminal_top, {
+  desc = '[O]pen [L]ayout (term top right)',
 })
 
 -- [[ Basic Autocommands ]]
@@ -295,6 +288,8 @@ require('lazy').setup({
         { '<leader>g', group = '[G]oto' },
         { '<leader>gp', group = '[G]oto [P]review' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>c', group = '[C]odex' },
+        { '<leader>l', group = '[L]eetCode' },
       },
     },
   },
@@ -405,7 +400,9 @@ require('lazy').setup({
 
       -- Shortcut for searching your Neovim configuration files
       vim.keymap.set('n', '<leader>sn', function()
-        builtin.find_files { cwd = vim.fn.stdpath 'config' }
+        local config_dir = vim.fn.fnamemodify(vim.fn.resolve(vim.fn.stdpath 'config' .. '/init.lua'), ':h')
+
+        builtin.find_files { cwd = config_dir }
       end, { desc = '[S]earch [N]eovim files' })
 
       vim.keymap.set('n', '<leader>shf', function()
@@ -899,6 +896,7 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
     build = ':TSUpdate',
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
@@ -929,8 +927,7 @@ require('lazy').setup({
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
         additional_vim_regex_highlighting = { 'ruby' },
       },
-      -- Filetype indent scripts are more predictable than Treesitter indent.
-      indent = { enable = false },
+      indent = { enable = true, disable = { 'ruby', 'c' } },
     },
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
@@ -988,109 +985,5 @@ require('lazy').setup({
   },
 })
 
-local function add_c_test_main()
-  if vim.bo.filetype ~= 'c' then
-    vim.notify('Ce raccourci est prevu pour les fichiers C.', vim.log.levels.WARN)
-    return
-  end
-
-  local function_name = vim.fn.expand '%:t:r'
-  if function_name == '' then
-    vim.notify('Impossible de trouver le nom du fichier.', vim.log.levels.ERROR)
-    return
-  end
-
-  if not function_name:match '^[%a_][%w_]*$' then
-    function_name = vim.fn.input('Fonction a tester: ', function_name)
-    if function_name == '' then
-      return
-    end
-  end
-
-  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-  for _, line in ipairs(lines) do
-    if line:match '^%s*int%s+main%s*%(' then
-      vim.notify('Un main existe deja dans ce fichier.', vim.log.levels.WARN)
-      return
-    end
-  end
-
-  local insert_lines = {
-    '',
-    'int main(void)',
-    '{',
-    '\t' .. function_name .. '();',
-    '\treturn (0);',
-    '}',
-  }
-
-  vim.api.nvim_buf_set_lines(0, -1, -1, false, insert_lines)
-  local line_count = vim.api.nvim_buf_line_count(0)
-  vim.api.nvim_win_set_cursor(0, { line_count - 2, 1 })
-  vim.cmd.write()
-end
-
-local function remove_c_test_main()
-  if vim.bo.filetype ~= 'c' then
-    vim.notify('Ce raccourci est prevu pour les fichiers C.', vim.log.levels.WARN)
-    return
-  end
-
-  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-  local main_start = nil
-
-  for i = #lines, 1, -1 do
-    if lines[i]:match '^%s*int%s+main%s*%(' then
-      main_start = i
-      break
-    end
-  end
-
-  if not main_start then
-    vim.notify('Aucun main a retirer dans ce fichier.', vim.log.levels.WARN)
-    return
-  end
-
-  local brace_depth = 0
-  local main_end = nil
-  local found_opening_brace = false
-
-  for i = main_start, #lines do
-    for _ in lines[i]:gmatch '{' do
-      brace_depth = brace_depth + 1
-      found_opening_brace = true
-    end
-
-    for _ in lines[i]:gmatch '}' do
-      brace_depth = brace_depth - 1
-    end
-
-    if found_opening_brace and brace_depth == 0 then
-      main_end = i
-      break
-    end
-  end
-
-  if not main_end then
-    vim.notify('Impossible de trouver la fin du main.', vim.log.levels.ERROR)
-    return
-  end
-
-  local delete_start = main_start
-  if main_start > 1 and lines[main_start - 1]:match '^%s*$' then
-    delete_start = main_start - 1
-  end
-
-  vim.api.nvim_buf_set_lines(0, delete_start - 1, main_end, false, {})
-  vim.cmd.write()
-end
-
-vim.keymap.set('n', '<leader>cm', add_c_test_main, {
-  desc = '[C]reate test [M]ain',
-})
-
-vim.keymap.set('n', '<leader>cd', remove_c_test_main, {
-  desc = '[C]ode [D]elete test main',
-})
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
