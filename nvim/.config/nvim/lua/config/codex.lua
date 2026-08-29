@@ -6,6 +6,16 @@ local codex_command = {
   '-c',
   'tui.alternate_screen=always',
 }
+local codex_window_options = {
+  cursorcolumn = false,
+  cursorline = false,
+  foldcolumn = '0',
+  number = false,
+  relativenumber = false,
+  scrolloff = 0,
+  signcolumn = 'no',
+  sidescrolloff = 0,
+}
 
 local function project_root()
   return vim.fs.root(0, '.git') or vim.uv.cwd()
@@ -58,10 +68,31 @@ local function project_terminal(root)
   return create_terminal(root)
 end
 
+local function set_window_options(window, options)
+  for name, value in pairs(options) do
+    vim.api.nvim_set_option_value(name, value, { win = window })
+  end
+end
+
+local function configure_codex_window(window)
+  set_window_options(window, codex_window_options)
+end
+
+local function current_window_options(window)
+  local options = {}
+
+  for name in pairs(codex_window_options) do
+    options[name] = vim.api.nvim_get_option_value(name, { win = window })
+  end
+
+  return options
+end
+
 local function open_native_terminal(root)
   local buffer = project_terminal(root)
   vim.cmd 'botright 15split'
   vim.api.nvim_win_set_buf(0, buffer)
+  configure_codex_window(0)
   vim.cmd 'startinsert'
 end
 
@@ -95,7 +126,9 @@ function M.open_current()
 
   if vim.b[current].codex_terminal then
     local previous = vim.w[window].codex_previous_buf
+    local previous_options = vim.w[window].codex_previous_window_options
     vim.w[window].codex_previous_buf = nil
+    vim.w[window].codex_previous_window_options = nil
 
     if previous and vim.api.nvim_buf_is_valid(previous) and previous ~= current then
       vim.api.nvim_win_set_buf(window, previous)
@@ -106,11 +139,17 @@ function M.open_current()
       vim.cmd 'enew'
     end
 
+    if previous_options then
+      set_window_options(window, previous_options)
+    end
+
     return
   end
 
   vim.w[window].codex_previous_buf = current
+  vim.w[window].codex_previous_window_options = current_window_options(window)
   vim.api.nvim_win_set_buf(window, project_terminal(project_root()))
+  configure_codex_window(window)
   vim.cmd 'startinsert'
 end
 
