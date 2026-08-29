@@ -1,5 +1,11 @@
 local M = { buffers = {} }
-local codex_command = { 'codex', '-c', 'tui.animations=false' }
+local codex_command = {
+  'codex',
+  '-c',
+  'tui.animations=false',
+  '-c',
+  'tui.alternate_screen=always',
+}
 
 local function project_root()
   return vim.fs.root(0, '.git') or vim.uv.cwd()
@@ -31,6 +37,7 @@ local function create_terminal(root)
 
   vim.api.nvim_buf_call(buffer, function()
     vim.fn.termopen(codex_command, { cwd = root })
+    vim.bo[buffer].scrollback = 1000
   end)
 
   M.buffers[root] = buffer
