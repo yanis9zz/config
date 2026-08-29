@@ -8,33 +8,80 @@ permissions:
   contents: read
 
 jobs:
-  lint:
+  linux:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Check setup script syntax
-        run: bash -n setup.sh
-
-      - name: Check PowerShell script syntax
-        shell: pwsh
+      - name: Install validation tools
         run: |
-          $tokens = $null
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            'scripts/install-meslolgs-fonts.ps1',
-            [ref]$tokens,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_ }
-            exit 1
-          }
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck stow tmux zsh
+
+      - name: Check shell syntax and style
+        run: |
+          bash -n setup.sh tests/test-installer.sh scripts/codex-popup
+          zsh -n zsh/.zshrc
+          shellcheck setup.sh tests/test-installer.sh scripts/codex-popup
+
+      - name: Parse tmux configuration
+        run: |
+          tmux -L dotfiles-ci -f /dev/null new-session -d -s config-test \; \
+            source-file "$PWD/tmux/.tmux.conf" \; kill-server
+
+      - name: Test install, backup and restore in a temporary HOME
+        run: ./tests/test-installer.sh
+
+      - name: Install pinned Neovim
+        run: |
+          curl -fL --retry 3 \
+            https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz \
+            -o /tmp/nvim.tar.gz
+          echo 'bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875  /tmp/nvim.tar.gz' |
+            sha256sum --check
+          tar -xzf /tmp/nvim.tar.gz -C /tmp
+          echo '/tmp/nvim-linux-x86_64/bin' >> "$GITHUB_PATH"
 
       - name: Check Lua formatting
         uses: JohnnyMorganz/stylua-action@479972f01e665acfcba96ada452c36608bdbbb5e # v4.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: v2.5.2
-          args: --check nvim
+          args: --check nvim/.config/nvim
+
+      - name: Start Neovim headlessly
+        env:
+          XDG_CONFIG_HOME: ${{ github.workspace }}/nvim/.config
+        run: |
+          nvim --headless '+Lazy! sync' +qa
+          nvim --headless '+checkhealth kickstart' +qa
+
+  powershell:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem scripts -Filter '*.ps1' | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_ }
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Test JSONC-preserving Windows Terminal update
+        shell: pwsh
+        run: ./tests/test-jsonc.ps1

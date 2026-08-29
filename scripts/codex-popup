@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+die() {
+    printf 'Codex popup: %s\n' "$*" >&2
+    exit 1
+}
+
+command -v codex >/dev/null 2>&1 || die 'the official Codex CLI is not installed.'
+command -v tmux >/dev/null 2>&1 || die 'tmux is not installed.'
+
+if [[ "${1:-}" == --session ]]; then
+    project="${2:-$PWD}"
+    project="$(realpath -m "$project")"
+    session_hash="$(printf '%s' "$project" | sha256sum | cut -c1-12)"
+    unset TMUX
+    exec tmux -L codex-workspaces new-session -A -s "codex-${session_hash}" -c "$project" codex
+fi
+
+project="${1:-$PWD}"
+if git_root="$(git -C "$project" rev-parse --show-toplevel 2>/dev/null)"; then
+    project="$git_root"
+else
+    project="$(realpath -m "$project")"
+fi
+
+if [[ -z "${TMUX:-}" ]]; then
+    exec "$0" --session "$project"
+fi
+
+printf -v popup_command '%q --session %q' "$0" "$project"
+exec tmux display-popup -E -d "$project" -w '90%' -h '90%' "$popup_command"

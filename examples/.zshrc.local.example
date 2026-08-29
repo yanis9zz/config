@@ -1,0 +1,25 @@
+# Copy only what you need to ~/.zshrc.local. This file is intentionally not stowed.
+
+# alias work-server='ssh user@example.org'
+# export BUN_INSTALL="$HOME/.bun"
+# export PATH="$BUN_INSTALL/bin:$PATH"
+# [[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh" >/dev/null 2>&1
+
+# Lazy NVM loading: keep this block if Node is installed through NVM.
+# typeset -g _DOTFILES_NVM_LOADED=0
+# _dotfiles_load_nvm() {
+#   (( _DOTFILES_NVM_LOADED )) && return
+#   _DOTFILES_NVM_LOADED=1
+#   export NVM_DIR="$HOME/.nvm"
+#   unfunction nvm node npm npx corepack codex 2>/dev/null || true
+#   [[ ! -s "$NVM_DIR/nvm.sh" ]] || source "$NVM_DIR/nvm.sh"
+#   [[ ! -s "$NVM_DIR/bash_completion" ]] || source "$NVM_DIR/bash_completion"
+# }
+# if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+#   nvm() { _dotfiles_load_nvm; nvm "$@"; }
+#   node() { _dotfiles_load_nvm; command node "$@"; }
+#   npm() { _dotfiles_load_nvm; command npm "$@"; }
+#   npx() { _dotfiles_load_nvm; command npx "$@"; }
+#   corepack() { _dotfiles_load_nvm; command corepack "$@"; }
+#   codex() { _dotfiles_load_nvm; command codex "$@"; }
+# fi
