@@ -27,7 +27,10 @@ map('n', '<leader>ol', function()
   vim.cmd 'wincmd k'
   vim.cmd 'resize 12'
   vim.cmd 'terminal'
+  vim.wo.winfixheight = true
+  vim.wo.winfixwidth = true
   vim.cmd 'wincmd j'
+  vim.wo.winfixwidth = true
   vim.cmd 'wincmd h'
 end, { desc = '[O]pen [L]ayout (term top right)' })
 

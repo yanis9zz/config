@@ -29,6 +29,46 @@ local function leet(command)
   run_when_ready()
 end
 
+local tree_layout
+
+local function capture_layout()
+  local layout = {}
+  for _, window in ipairs(vim.api.nvim_list_wins()) do
+    table.insert(layout, {
+      window = window,
+      width = vim.api.nvim_win_get_width(window),
+      height = vim.api.nvim_win_get_height(window),
+    })
+  end
+  return layout
+end
+
+local function restore_layout(layout)
+  for _, size in ipairs(layout or {}) do
+    if vim.api.nvim_win_is_valid(size.window) then
+      pcall(vim.api.nvim_win_set_height, size.window, size.height)
+      pcall(vim.api.nvim_win_set_width, size.window, size.width)
+    end
+  end
+end
+
+local function toggle_tree()
+  local tree = require 'nvim-tree.api'
+  local was_visible = tree.tree.is_visible()
+
+  if not was_visible then
+    tree_layout = capture_layout()
+  end
+
+  tree.tree.toggle()
+  vim.schedule(function()
+    restore_layout(tree_layout)
+    if was_visible then
+      tree_layout = nil
+    end
+  end)
+end
+
 return {
   {
     'nvim-tree/nvim-tree.lua',
@@ -38,9 +78,12 @@ return {
       'nvim-tree/nvim-web-devicons',
     },
     keys = {
-      { '<leader>e', '<cmd>NvimTreeToggle<cr>', desc = '[E]xplore Tree' },
+      { '<leader>e', toggle_tree, desc = '[E]xplore Tree' },
     },
     opts = {
+      view = {
+        preserve_window_proportions = true,
+      },
       actions = {
         open_file = {
           window_picker = {
