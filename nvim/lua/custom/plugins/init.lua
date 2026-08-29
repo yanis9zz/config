@@ -33,29 +33,30 @@ return {
   {
     'nvim-tree/nvim-tree.lua',
     version = '*',
-    lazy = false,
+    cmd = { 'NvimTreeToggle', 'NvimTreeFindFile' },
     dependencies = {
       'nvim-tree/nvim-web-devicons',
     },
-    config = function()
-      vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { desc = '[E]xplore Tree' })
-      require('nvim-tree').setup {
-        actions = {
-          open_file = {
-            window_picker = {
-              enable = false,
-            },
+    keys = {
+      { '<leader>e', '<cmd>NvimTreeToggle<cr>', desc = '[E]xplore Tree' },
+    },
+    opts = {
+      actions = {
+        open_file = {
+          window_picker = {
+            enable = false,
           },
         },
-      }
-    end,
+      },
+    },
   },
 
   {
     '42Paris/42header',
-    config = function()
-      vim.keymap.set('n', '<leader>h', ':Stdheader<CR>', { desc = '42 [H]eader' })
-    end,
+    cmd = 'Stdheader',
+    keys = {
+      { '<leader>H', '<cmd>Stdheader<cr>', desc = '42 [H]eader' },
+    },
   },
   {
     'alex-popov-tech/store.nvim',
@@ -72,43 +73,48 @@ return {
   },
   {
     'rmagatti/goto-preview',
-    event = 'BufEnter',
-    config = true,
+    opts = {},
     keys = {
       {
         '<leader>gpd',
-        "<cmd>lua require('goto-preview').goto_preview_definition()<CR>",
-        noremap = true,
+        function()
+          require('goto-preview').goto_preview_definition()
+        end,
         desc = '[G]oto [P]review [D]efinition',
       },
       {
         '<leader>gpD',
-        "<cmd>lua require('goto-preview').goto_preview_declaration()<CR>",
-        noremap = true,
+        function()
+          require('goto-preview').goto_preview_declaration()
+        end,
         desc = '[G]oto [P]review [D]eclaration',
       },
       {
         '<leader>gpi',
-        "<cmd>lua require('goto-preview').goto_preview_implementation()<CR>",
-        noremap = true,
+        function()
+          require('goto-preview').goto_preview_implementation()
+        end,
         desc = '[G]oto [P]review [I]mplementation',
       },
       {
         '<leader>gpt',
-        "<cmd>lua require('goto-preview').goto_preview_type_definition()<CR>",
-        noremap = true,
+        function()
+          require('goto-preview').goto_preview_type_definition()
+        end,
         desc = '[G]oto [P]review [T]ype definition',
       },
       {
         '<leader>gpr',
-        "<cmd>lua require('goto-preview').goto_preview_references()<CR>",
-        noremap = true,
+        function()
+          require('goto-preview').goto_preview_references()
+        end,
         desc = '[G]oto [P]review [R]eferences',
       },
       {
         '<leader>gpc',
-        "<cmd>lua require('goto-preview').close_all_win()<CR>",
-        noremap = true,
+        function()
+          require('goto-preview').close_all_win()
+        end,
         desc = '[G]oto [P]review [C]lose all preview windows',
       },
     },
@@ -322,5 +328,5 @@ return {
       },
     },
   },
-  { 'mg979/vim-visual-multi' },
+  { 'mg979/vim-visual-multi', event = 'VeryLazy' },
 }

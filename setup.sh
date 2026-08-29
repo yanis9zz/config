@@ -357,20 +357,6 @@ install_oh_my_zsh() {
 }
 
 # ------------------------------------------------------------
-# Install tools
-# ------------------------------------------------------------
-
-install_stow
-install_zoxide
-install_fzf
-install_atuin
-install_ripgrep
-install_fd
-install_tmux
-install_oh_my_zsh
-install_powerlevel10k
-
-# ------------------------------------------------------------
 # Reset
 # ------------------------------------------------------------
 
@@ -392,6 +378,7 @@ reset_dotfiles() {
 case "${1:-}" in
     reset)
         reset_dotfiles
+        exit 0
         ;;
     "")
         ;;
@@ -402,6 +389,20 @@ case "${1:-}" in
 esac
 
 # ------------------------------------------------------------
+# Install tools
+# ------------------------------------------------------------
+
+install_stow
+install_zoxide
+install_fzf
+install_atuin
+install_ripgrep
+install_fd
+install_tmux
+install_oh_my_zsh
+install_powerlevel10k
+
+# ------------------------------------------------------------
 # Dotfiles
 # ------------------------------------------------------------
 
@@ -409,9 +410,9 @@ echo "[+] Installing dotfiles..."
 
 mkdir -p "$HOME/.config/nvim"
 
-stow -d "$DOTFILES" --target="$HOME" zsh
-stow -d "$DOTFILES" --target="$HOME/.config/nvim" nvim
-stow -d "$DOTFILES" --target="$HOME" tmux
+stow --restow -d "$DOTFILES" --target="$HOME" zsh
+stow --restow -d "$DOTFILES" --target="$HOME/.config/nvim" nvim
+stow --restow -d "$DOTFILES" --target="$HOME" tmux
 
 echo
 echo "Done."
