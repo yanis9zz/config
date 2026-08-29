@@ -5,6 +5,7 @@ vim.o.tabstop = 4
 vim.o.shiftwidth = 4
 vim.o.softtabstop = 4
 vim.o.termguicolors = true
+vim.o.guicursor = 'n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20,t:block-blinkon0-TermCursor'
 vim.o.winborder = 'rounded'
 vim.o.mouse = 'a'
 vim.o.showmode = false

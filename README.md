@@ -181,7 +181,7 @@ codex --version
 | `<leader>cw` | remplace la fenêtre actuelle par Codex ; appuyer de nouveau restaure le buffer précédent |
 | `<C-b>C` dans tmux | ouvre directement la popup Codex |
 
-Chaque projet réutilise son terminal Codex. Dans tmux, `<leader>cc` affiche une popup persistante à 90 %. Hors tmux, il ouvre un split natif Neovim. `<leader>cw` reste toujours dans la fenêtre actuelle. Le clignotement du curseur en mode insertion est normal.
+Chaque projet réutilise son terminal Codex. Dans tmux, `<leader>cc` affiche une popup persistante à 90 %. Hors tmux, il ouvre un split natif Neovim. `<leader>cw` reste toujours dans la fenêtre actuelle. Le curseur des terminaux intégrés ne clignote pas.
 
 ## tmux
 
