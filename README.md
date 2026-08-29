@@ -1,4 +1,4 @@
-# Yanis’ dotfiles
+# Dotfiles
 
 [![CI](https://github.com/yanis9zz/config/actions/workflows/ci.yml/badge.svg)](https://github.com/yanis9zz/config/actions/workflows/ci.yml)
 
