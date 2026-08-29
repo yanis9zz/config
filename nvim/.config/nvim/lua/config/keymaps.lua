@@ -38,5 +38,9 @@ local open_codex = function()
   require('config.codex').open()
 end
 
+local open_codex_current = function()
+  require('config.codex').open_current()
+end
+
 map({ 'n', 't' }, '<leader>cc', open_codex, { desc = 'Open [C]odex CLI' })
-map({ 'n', 't' }, '<leader>cw', open_codex, { desc = 'Open [C]odex CLI (compatibility)' })
+map({ 'n', 't' }, '<leader>cw', open_codex_current, { desc = 'Open [C]odex in current [W]indow' })

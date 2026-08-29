@@ -10,7 +10,7 @@ Une configuration Linux/WSL rapide et reproductible pour Neovim, Zsh et tmux.
 - Neovim modulaire avec LSP, complétion, formatage et recherche ;
 - Oh My Zsh, Powerlevel10k, Atuin, Zoxide et NVM paresseux ;
 - MesloLGS NF installée et appliquée automatiquement sous WSL ;
-- Codex CLI dans une popup tmux persistante par projet.
+- Codex CLI dans une popup tmux ou la fenêtre Neovim actuelle.
 
 ## Installation
 
@@ -177,11 +177,11 @@ codex --version
 
 | Raccourci | Comportement |
 | --- | --- |
-| `<leader>cc` | ouvre Codex à la racine du projet Git |
-| `<leader>cw` | alias compatible de `<leader>cc` |
+| `<leader>cc` | ouvre Codex à la racine du projet Git dans une popup tmux (ou un split hors tmux) |
+| `<leader>cw` | remplace la fenêtre actuelle par Codex ; appuyer de nouveau restaure le buffer précédent |
 | `<C-b>C` dans tmux | ouvre directement la popup Codex |
 
-Dans tmux, chaque projet possède une session Codex persistante affichée dans une popup à 90 %. Hors tmux, un terminal natif Neovim est créé puis réutilisé. Le clignotement du curseur en mode insertion est normal.
+Chaque projet réutilise son terminal Codex. Dans tmux, `<leader>cc` affiche une popup persistante à 90 %. Hors tmux, il ouvre un split natif Neovim. `<leader>cw` reste toujours dans la fenêtre actuelle. Le clignotement du curseur en mode insertion est normal.
 
 ## tmux
 
