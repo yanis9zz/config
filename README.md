@@ -21,7 +21,7 @@ Le script d'installation cible Linux sur `x86_64` ou `aarch64`. Il ne remplace p
 - `tar`, `make` et Perl ;
 - Node.js pour les serveurs LSP TypeScript installés par Mason.
 
-Le script installe ensuite, si nécessaire, GNU Stow, Zoxide, FZF, Atuin, Ripgrep, fd, tmux, Oh My Zsh et Powerlevel10k. Les exécutables téléchargés sont placés dans `~/.local/bin`.
+Le script installe ensuite, si nécessaire, GNU Stow, Zoxide, FZF, Atuin, Ripgrep, fd, tmux, Oh My Zsh, Powerlevel10k et sa police recommandée MesloLGS NF. Les exécutables téléchargés sont placés dans `~/.local/bin`.
 
 ## Installation
 
@@ -43,6 +43,15 @@ nvim
 ```
 
 `lazy.nvim` installe automatiquement les plugins. Mason installe ensuite `clangd`, `pyright`, `ts_ls`, `lua_ls` et StyLua. Les premiers téléchargements peuvent prendre quelques instants ; utilise `:Lazy` et `:Mason` pour suivre leur état.
+
+### Police Powerlevel10k
+
+Les quatre variantes officielles de MesloLGS NF sont installées automatiquement : Regular, Bold, Italic et Bold Italic.
+
+- Sous Linux natif, elles sont placées dans `$XDG_DATA_HOME/fonts` ou `~/.local/share/fonts`, puis le cache Fontconfig est actualisé.
+- Sous WSL, elles sont enregistrées dans les polices utilisateur Windows et **MesloLGS NF** devient automatiquement la police par défaut de Windows Terminal. Aucun droit administrateur n'est nécessaire. Une sauvegarde `settings.json.before-meslolgs.bak` est conservée avant la première modification.
+
+Après une première installation sous WSL, redémarre Windows Terminal pour charger la police. Sous Linux natif, le choix ne peut pas être automatisé pour tous les émulateurs de terminal : sélectionne **MesloLGS NF** dans les réglages de celui que tu utilises.
 
 ## Mise à jour
 
@@ -176,7 +185,7 @@ bash -n setup.sh
 nvim --headless '+checkhealth lazy vim.deprecated kickstart' +qa
 ```
 
-La CI GitHub exécute automatiquement la vérification Bash et StyLua à chaque push et pull request.
+La CI GitHub vérifie automatiquement la syntaxe Bash et PowerShell ainsi que le formatage StyLua à chaque push et pull request.
 
 ## Structure
 
@@ -186,6 +195,7 @@ La CI GitHub exécute automatiquement la vérification Bash et StyLua à chaque 
 ├── tmux/.tmux.conf        # Configuration tmux
 ├── zsh/.zshrc             # Configuration Zsh
 ├── zsh/.p10k.zsh          # Thème Powerlevel10k
+├── scripts/                # Helpers d'installation, notamment pour WSL
 ├── setup.sh               # Installation, restow et reset
 └── .github/workflows/     # Vérifications automatiques
 ```

@@ -10,6 +10,14 @@ ATUIN_VERSION="18.18.1"
 RIPGREP_VERSION="15.2.0"
 FD_VERSION="10.4.2"
 TMUX_VERSION="3.6b"
+POWERLEVEL10K_MEDIA_COMMIT="145eb9fbc2f42ee408dacd9b22d8e6e0e553f83d"
+
+MESLO_FONT_FILES=(
+    "MesloLGS NF Regular.ttf"
+    "MesloLGS NF Bold.ttf"
+    "MesloLGS NF Italic.ttf"
+    "MesloLGS NF Bold Italic.ttf"
+)
 
 export PATH="$LOCAL_BIN:$PATH"
 
@@ -49,6 +57,39 @@ download_file() {
         echo "Error: curl or wget is required." >&2
         exit 1
     fi
+}
+
+is_wsl() {
+    [[ -n "${WSL_DISTRO_NAME:-}" ]] ||
+        grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null
+}
+
+meslo_fonts_present() {
+    local font_dir="$1"
+    local font
+
+    for font in "${MESLO_FONT_FILES[@]}"; do
+        if [[ ! -f "$font_dir/$font" ]]; then
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+download_meslo_fonts() {
+    local destination="$1"
+    local font
+    local encoded_font
+
+    mkdir -p "$destination"
+
+    for font in "${MESLO_FONT_FILES[@]}"; do
+        encoded_font="${font// /%20}"
+        download_file \
+            "https://raw.githubusercontent.com/romkatv/powerlevel10k-media/${POWERLEVEL10K_MEDIA_COMMIT}/${encoded_font}" \
+            "$destination/$font"
+    done
 }
 
 linux_target() {
@@ -328,6 +369,68 @@ install_powerlevel10k() {
 }
 
 # ------------------------------------------------------------
+# MesloLGS NF
+# ------------------------------------------------------------
+
+install_meslolgs_fonts() {
+    local font_dir
+    local powershell_script
+    local source_dir
+    local tmp
+
+    if is_wsl && command -v powershell.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
+        powershell_script="$(wslpath -w "$DOTFILES/scripts/install-meslolgs-fonts.ps1")"
+
+        if powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+            -File "$powershell_script" -Check >/dev/null 2>&1; then
+            echo "[OK] MesloLGS NF already installed in Windows"
+            powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+                -File "$powershell_script" -ConfigureTerminal
+            return
+        fi
+
+        echo "[+] Installing MesloLGS NF in Windows..."
+
+        tmp="$(mktemp -d)"
+        download_meslo_fonts "$tmp"
+        source_dir="$(wslpath -w "$tmp")"
+
+        if ! powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+            -File "$powershell_script" -SourceDirectory "$source_dir"; then
+            rm -rf "$tmp"
+            return 1
+        fi
+
+        rm -rf "$tmp"
+        echo "[OK] MesloLGS NF installed in Windows"
+        echo "[!] Restart Windows Terminal to reload its font"
+        return
+    fi
+
+    font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
+
+    if meslo_fonts_present "$font_dir"; then
+        echo "[OK] MesloLGS NF already installed"
+        return
+    fi
+
+    echo "[+] Installing MesloLGS NF..."
+    download_meslo_fonts "$font_dir"
+
+    if command -v fc-cache >/dev/null 2>&1; then
+        fc-cache -f "$font_dir"
+    fi
+
+    echo "[OK] MesloLGS NF installed"
+
+    if is_wsl; then
+        echo "[!] PowerShell was unavailable; Windows Terminal may not see the Linux font installation"
+    else
+        echo "[!] Restart the terminal and select 'MesloLGS NF' in its profile settings"
+    fi
+}
+
+# ------------------------------------------------------------
 # Oh My Zsh
 # ------------------------------------------------------------
 
@@ -401,6 +504,7 @@ install_fd
 install_tmux
 install_oh_my_zsh
 install_powerlevel10k
+install_meslolgs_fonts
 
 # ------------------------------------------------------------
 # Dotfiles
@@ -425,3 +529,4 @@ echo "fd:     $(command -v fd)"
 echo "tmux:   $(command -v tmux)"
 echo "omz:    $HOME/.oh-my-zsh"
 echo "p10k:   ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+echo "font:   MesloLGS NF"
