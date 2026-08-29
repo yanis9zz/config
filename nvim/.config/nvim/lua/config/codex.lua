@@ -1,4 +1,5 @@
 local M = { buffers = {} }
+local codex_command = { 'codex', '-c', 'tui.animations=false' }
 
 local function project_root()
   return vim.fs.root(0, '.git') or vim.uv.cwd()
@@ -29,7 +30,7 @@ local function create_terminal(root)
   vim.b[buffer].codex_root = root
 
   vim.api.nvim_buf_call(buffer, function()
-    vim.fn.termopen({ 'codex' }, { cwd = root })
+    vim.fn.termopen(codex_command, { cwd = root })
   end)
 
   M.buffers[root] = buffer

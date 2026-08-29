@@ -15,7 +15,7 @@ if [[ "${1:-}" == --session ]]; then
     project="$(realpath -m "$project")"
     session_hash="$(printf '%s' "$project" | sha256sum | cut -c1-12)"
     unset TMUX
-    exec tmux -L codex-workspaces new-session -A -s "codex-${session_hash}" -c "$project" codex
+    exec tmux -L codex-workspaces new-session -A -s "codex-${session_hash}" -c "$project" codex -c tui.animations=false
 fi
 
 project="${1:-$PWD}"
