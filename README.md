@@ -1,16 +1,28 @@
-# Dotfiles Linux / WSL
+# Yanis’ dotfiles
 
-Configuration reproductible et performante pour Neovim, Zsh et tmux. L’installation se fait sans `sudo`, sauvegarde les fichiers existants et vérifie en SHA‑256 tous les binaires et toutes les polices téléchargés.
+[![CI](https://github.com/yanis9zz/config/actions/workflows/ci.yml/badge.svg)](https://github.com/yanis9zz/config/actions/workflows/ci.yml)
 
-## Installation rapide
+Une configuration Linux/WSL rapide et reproductible pour Neovim, Zsh et tmux.
 
-Le script cible Linux ou WSL sur `x86_64` et `aarch64`.
+- installation sans `sudo` dans `~/.local` ;
+- sauvegarde automatique des configurations existantes ;
+- téléchargements épinglés et vérifiés par SHA‑256 ;
+- Neovim modulaire avec LSP, complétion, formatage et recherche ;
+- Oh My Zsh, Powerlevel10k, Atuin, Zoxide et NVM paresseux ;
+- MesloLGS NF installée et appliquée automatiquement sous WSL ;
+- Codex CLI dans une popup tmux persistante par projet.
 
-Prérequis à installer soi-même :
+## Installation
 
-- Git, Zsh, `tar`, `sha256sum`, `make` et Perl ;
-- `curl` ou `wget` ;
-- Node.js 20 ou plus récent. Le script ne l’installe pas et ne change pas le shell avec `chsh`.
+### Compatibilité
+
+| Système | Architecture | Support |
+| --- | --- | --- |
+| Linux | `x86_64` / `aarch64` | Oui |
+| WSL | `x86_64` / `aarch64` | Oui |
+| macOS / Windows natif | — | Non |
+
+Prérequis : Git, Zsh, `curl` ou `wget`, `tar`, `make`, Perl, `sha256sum` et Node.js 20+. Le script n’installe pas Node.js et ne change pas ton shell avec `chsh`.
 
 ```sh
 git clone https://github.com/yanis9zz/config.git ~/config
@@ -19,33 +31,40 @@ cd ~/config
 exec zsh
 ```
 
-`./setup.sh` sans argument équivaut à `./setup.sh install`.
+`./setup.sh` sans argument lance également l’installation.
 
-Le script installe ou met à niveau dans `~/.local` les versions épinglées suivantes : GNU Stow 2.4.1, Zoxide 0.10.0, FZF 0.74.3, Atuin 18.20.1, Ripgrep 15.2.0, fd 10.5.0 et tmux 3.7c. Si Neovim est absent ou antérieur à 0.11, Neovim 0.12.5 est installé. Oh My Zsh et Powerlevel10k sont eux aussi épinglés à des commits précis.
+Au premier démarrage de Neovim, `lazy.nvim` télécharge les plugins et Mason installe les serveurs LSP. Cette première ouverture peut donc prendre un peu plus de temps.
 
-Les trois paquets Stow ont tous `$HOME` comme cible :
+## Ce que le script installe
 
-```text
-zsh/.zshrc                         -> ~/.zshrc
-tmux/.tmux.conf                    -> ~/.tmux.conf
-nvim/.config/nvim/init.lua         -> ~/.config/nvim/init.lua
-```
+Les outils sont placés dans `~/.local` et les versions sont verrouillées dans [`setup.sh`](./setup.sh).
 
-Les liens restent reliés au dépôt : une modification dans `~/config` modifie donc la configuration utilisée.
+| Outil | Version | Utilité |
+| --- | ---: | --- |
+| GNU Stow | 2.4.1 | liens symboliques des dotfiles |
+| Neovim | 0.12.5 | installé seulement si absent ou antérieur à 0.11 |
+| Zoxide | 0.10.0 | navigation rapide entre dossiers |
+| FZF | 0.74.3 | recherche floue |
+| Atuin | 18.20.1 | historique du shell |
+| Ripgrep | 15.2.0 | recherche de texte |
+| fd | 10.5.0 | recherche de fichiers |
+| tmux | 3.7c | sessions et panneaux persistants |
 
-## Commandes de maintenance
+Oh My Zsh, Powerlevel10k et les polices MesloLGS NF sont épinglés à des commits précis. Aucun installateur distant n’est exécuté avec `curl | sh`.
 
-```sh
-./setup.sh install             # installe et applique la configuration
-./setup.sh update              # remet outils, dépôts épinglés et liens dans l’état attendu
-./setup.sh doctor              # diagnostic strictement en lecture seule
-./setup.sh reset               # retire seulement les liens Stow
-./setup.sh restore             # restaure la sauvegarde la plus récente
-./setup.sh restore 20260829-120000
-./setup.sh --help
-```
+## Commandes
 
-Pour récupérer une nouvelle version du dépôt :
+| Commande | Effet |
+| --- | --- |
+| `./setup.sh install` | installe les outils et applique les dotfiles |
+| `./setup.sh update` | remet les outils, dépôts épinglés et liens dans l’état attendu |
+| `./setup.sh doctor` | effectue un diagnostic sans rien modifier |
+| `./setup.sh reset` | retire uniquement les liens gérés par Stow |
+| `./setup.sh restore` | restaure la dernière sauvegarde |
+| `./setup.sh restore <date>` | restaure une sauvegarde précise |
+| `./setup.sh --help` | affiche l’aide |
+
+Pour mettre le dépôt à jour :
 
 ```sh
 cd ~/config
@@ -53,96 +72,120 @@ git pull --ff-only
 ./setup.sh update
 ```
 
-### Sauvegardes et restauration
+## Sauvegardes et sécurité
 
-Avant le déploiement, tout fichier qui entrerait en conflit est déplacé ici :
+Avant de créer un lien, l’installateur simule le déploiement Stow. Les fichiers incompatibles sont déplacés vers :
 
 ```text
 ~/.config-backups/yanis-config/<date-heure>/
-├── home/          # copie de l’arborescence originale
-└── manifest.tsv   # correspondance entre origine et sauvegarde
+├── home/          # ancienne arborescence
+└── manifest.tsv   # emplacement original de chaque élément
 ```
 
-Les anciennes sauvegardes ne sont jamais supprimées. Si la simulation ou le déploiement Stow échoue, l’installateur retire ses nouveaux liens et restaure automatiquement la sauvegarde créée pendant l’exécution. `reset` ne restaure rien ; `restore` retire les liens puis recopie uniquement les dotfiles présents dans le manifeste. Il n’écrase jamais un nouveau fichier réel et ne modifie pas les réglages de Windows Terminal.
+Les sauvegardes ne sont jamais supprimées automatiquement.
 
-Les anciens exécutables non suivis que le script doit remplacer sont conservés dans `~/.local/state/yanis-config/replaced-binaries/`. Les outils réellement gérés sont enregistrés dans `~/.local/state/yanis-config/managed-tools`.
+- si Stow échoue, les nouveaux liens sont retirés et la sauvegarde est restaurée ;
+- `reset` enlève les liens mais ne restaure pas les anciens fichiers ;
+- `restore` refuse d’écraser un nouveau fichier non géré ;
+- les anciens binaires remplacés sont conservés dans `~/.local/state/yanis-config/replaced-binaries/` ;
+- la restauration des dotfiles ne touche jamais aux réglages de Windows Terminal.
 
-## Zsh et configuration locale
+Disposition Stow :
 
-Le dépôt ne contient ni IP personnelle, ni secret, ni configuration Bun/opam propre à une machine. Place ces éléments dans le fichier non versionné `~/.zshrc.local`, chargé à la fin de `.zshrc` :
+```text
+zsh/.zshrc                  → ~/.zshrc
+tmux/.tmux.conf             → ~/.tmux.conf
+nvim/.config/nvim/          → ~/.config/nvim/
+```
+
+Les fichiers actifs sont des liens vers le dépôt : modifier `~/config/zsh/.zshrc`, par exemple, modifie directement la configuration utilisée.
+
+## Configuration locale Zsh
+
+Les alias privés, IP, secrets et runtimes propres à une machine ne doivent pas être commités. Place-les dans `~/.zshrc.local` :
 
 ```sh
 cp ~/config/examples/.zshrc.local.example ~/.zshrc.local
 ```
 
-L’exemple contient un bloc NVM paresseux à décommenter si Node est installé avec NVM. Il le charge à la première utilisation de `node`, `npm`, `npx`, `corepack`, `codex` ou `nvim`. Le wrapper `nvim` appelle ce hook avant Neovim afin que Mason voie Node, sans payer le coût de NVM à chaque ouverture de shell.
+Ce fichier est chargé avant le wrapper Neovim. L’exemple contient un bloc optionnel pour charger NVM uniquement à la première utilisation de `node`, `npm`, `npx`, `corepack`, `codex` ou `nvim`. Neovim appelle ce hook afin que Mason voie toujours Node.js.
 
-Sous WSL, l’agrandissement de Windows Terminal au lancement de Neovim est désactivé par défaut. Pour l’activer localement :
+Pour maximiser automatiquement Windows Terminal quand Neovim démarre sous WSL :
 
 ```sh
 echo 'export DOTFILES_MAXIMIZE_WINDOWS_TERMINAL=1' >> ~/.zshrc.local
+exec zsh
 ```
 
 ## Police Powerlevel10k
 
-Les quatre variantes officielles de MesloLGS NF sont téléchargées depuis un commit épinglé et vérifiées avant installation.
+Les variantes Regular, Bold, Italic et Bold Italic de MesloLGS NF sont vérifiées puis installées sans droits administrateur.
 
-- Sous Linux, elles sont placées dans `${XDG_DATA_HOME:-~/.local/share}/fonts`, puis `fc-cache` est exécuté s’il existe.
-- Sous WSL, elles sont installées comme polices utilisateur Windows, sans droits administrateur. Le profil par défaut de Windows Terminal reçoit aussi `MesloLGS NF`.
+### Linux
 
-La modification de `settings.json` conserve le JSONC original, notamment ses commentaires et ses virgules finales. Une sauvegarde `settings.json.before-meslolgs.bak` est créée avant la première modification. Si un profil définit son propre `font.face`, le script avertit qu’il prend priorité sur la valeur par défaut. Redémarre Windows Terminal après la première installation.
+Les fichiers sont placés dans `$XDG_DATA_HOME/fonts` ou `~/.local/share/fonts`. Le cache Fontconfig est rafraîchi si `fc-cache` est disponible. Il peut rester nécessaire de sélectionner manuellement **MesloLGS NF** dans l’émulateur de terminal.
 
-## Codex dans Neovim et tmux
+### WSL et Windows Terminal
 
-La configuration utilise le [Codex CLI officiel](https://developers.openai.com/codex/cli/) et ne l’installe pas ni ne l’authentifie automatiquement. Vérifie sa présence avec :
+Les polices sont enregistrées pour l’utilisateur Windows et **MesloLGS NF** est appliquée au profil par défaut de Windows Terminal. L’éditeur préserve le JSONC original : commentaires, formatage et virgules finales restent intacts.
 
-```sh
-./setup.sh doctor
-codex --version
-```
-
-Dans Neovim, `<leader>` est la barre d’espace :
-
-- `<leader>cc` ouvre Codex pour la racine Git courante ;
-- `<leader>cw` est un alias de compatibilité ;
-- dans tmux, une popup à 90 % réutilise une session persistante propre au projet ;
-- hors tmux, Codex s’ouvre dans un terminal natif Neovim réutilisable.
-
-Depuis tmux, `<C-b>C` ouvre directement la même popup. Le curseur du CLI peut clignoter normalement en mode insertion ; l’ancienne intégration `codex.nvim`, qui manipulait directement ses fenêtres et buffers internes, a été retirée.
+Une copie `settings.json.before-meslolgs.bak` est créée avant la première modification. Un avertissement apparaît lorsqu’un profil possède son propre `font.face`, car cette valeur prend priorité sur le profil par défaut. Redémarre Windows Terminal après la première installation.
 
 ## Neovim
 
-Au premier lancement, `lazy.nvim` installe les plugins et Mason installe `clangd`, `pyright`, `ts_ls`, `lua_ls` et StyLua. Node doit donc être disponible. Les commandes utiles sont `:Lazy`, `:Mason`, `:ConformInfo` et `:checkhealth`.
+`<leader>` correspond à la barre d’espace.
 
-La configuration est séparée par responsabilité :
-
-```text
-~/.config/nvim/
-├── init.lua
-└── lua/
-    ├── config/       # options, raccourcis, bootstrap lazy.nvim et Codex
-    ├── plugins/      # éditeur, LSP, GitSigns, autopairs et extras
-    └── kickstart/    # healthcheck personnalisé
-```
-
-Raccourcis principaux :
+### Navigation et recherche
 
 | Raccourci | Action |
 | --- | --- |
-| `<leader>e` | NvimTree |
-| `<leader>sf` / `<leader>sg` | fichiers / recherche texte Telescope |
-| `<leader>shf` / `<leader>shg` | recherches avec fichiers cachés |
-| `<leader><leader>` | buffers ouverts |
-| `<leader>f` | formater le buffer ou la sélection |
-| `<leader>ol` | layout avec terminal en haut à droite |
-| `<leader>H` | header 42 |
-| `grd`, `grr`, `gri`, `grt` | définition, références, implémentation, type |
-| `<leader>hs` / `<leader>hr` | stage / reset du hunk Git |
+| `<leader>e` | ouvrir ou fermer NvimTree |
+| `<leader>ol` | créer le layout éditeur + terminal |
+| `<leader>sf` | rechercher un fichier |
+| `<leader>sg` | rechercher du texte dans le projet |
+| `<leader>shf` / `<leader>shg` | inclure les fichiers cachés |
+| `<leader><leader>` | sélectionner un buffer |
+| `<C-h/j/k/l>` | changer de fenêtre |
+| `<C-S-h/j/k/l>` | déplacer la fenêtre active |
 | `<Esc><Esc>` | quitter le mode terminal |
+
+Le layout `<leader>ol` verrouille la colonne du terminal : ouvrir puis fermer NvimTree ne déforme pas son affichage.
+
+### Code, LSP et Git
+
+| Raccourci | Action |
+| --- | --- |
+| `<leader>f` | formater le buffer ou la sélection |
+| `grd` / `grD` | définition / déclaration |
+| `grr` / `gri` / `grt` | références / implémentations / type |
+| `grn` / `gra` | renommer / action de code |
+| `<leader>m` | afficher le diagnostic courant |
+| `<leader>hs` / `<leader>hr` | stage / reset du hunk Git |
+| `]c` / `[c` | hunk suivant / précédent |
+| `<leader>H` | ajouter le header 42 |
+
+Mason installe automatiquement `clangd`, `pyright`, `ts_ls`, `lua_ls` et StyLua. Commandes utiles : `:Lazy`, `:Mason`, `:ConformInfo` et `:checkhealth`.
+
+## Codex CLI
+
+La configuration utilise exclusivement le [Codex CLI officiel](https://developers.openai.com/codex/cli/). Elle ne l’installe pas et ne lance jamais l’authentification automatiquement.
+
+```sh
+codex --version
+./setup.sh doctor
+```
+
+| Raccourci | Comportement |
+| --- | --- |
+| `<leader>cc` | ouvre Codex à la racine du projet Git |
+| `<leader>cw` | alias compatible de `<leader>cc` |
+| `<C-b>C` dans tmux | ouvre directement la popup Codex |
+
+Dans tmux, chaque projet possède une session Codex persistante affichée dans une popup à 90 %. Hors tmux, un terminal natif Neovim est créé puis réutilisé. Le clignotement du curseur en mode insertion est normal.
 
 ## tmux
 
-Le préfixe reste `<C-b>`. La configuration active la souris, l’historique long, le true color et la navigation Vim.
+Le préfixe est `<C-b>`. L’alias `t` ouvre ou rejoint la session `main`.
 
 | Raccourci | Action |
 | --- | --- |
@@ -150,38 +193,65 @@ Le préfixe reste `<C-b>`. La configuration active la souris, l’historique lon
 | `<C-b>h/j/k/l` | changer de panneau |
 | `<C-b>c` | nouvelle fenêtre dans le dossier courant |
 | `<C-b>b` | afficher ou masquer la barre de statut |
-| `<C-b>r` | recharger la configuration |
+| `<C-b>r` | recharger `.tmux.conf` |
 | `<C-b>C` | popup Codex du projet |
 
-L’alias `t` ouvre ou rejoint la session `main`.
+La souris, le true color et un historique de 100 000 lignes sont activés.
 
-## Tests et CI
+## Diagnostic
 
-Avant un commit :
+Commence toujours par :
 
 ```sh
-bash -n setup.sh
-zsh -n zsh/.zshrc
-shellcheck setup.sh scripts/codex-popup
-~/.local/share/nvim/mason/bin/stylua --check nvim/.config/nvim
-XDG_CONFIG_HOME="$PWD/nvim/.config" nvim --headless '+checkhealth kickstart' +qa
+cd ~/config
+./setup.sh doctor
 ```
 
-Le dossier `.github/workflows/` décrit les tests lancés gratuitement par GitHub Actions à chaque push et pull request. Il ne s’exécute pas sur ta machine : il vérifie Bash, Zsh, ShellCheck, tmux, PowerShell/JSONC, l’installation dans un `$HOME` temporaire et le démarrage headless de Neovim.
+Quelques commandes complémentaires :
 
-## Structure du dépôt
+```sh
+nvim --headless '+checkhealth kickstart' +qa
+tmux source-file ~/.tmux.conf
+zsh -n ~/.zshrc
+```
+
+## Structure
 
 ```text
 .
-├── .github/workflows/ci.yml
-├── examples/.zshrc.local.example
+├── .github/workflows/ci.yml          # tests GitHub Actions
+├── examples/.zshrc.local.example     # configuration locale non suivie
 ├── nvim/.config/nvim/
+│   ├── init.lua
+│   └── lua/
+│       ├── config/                    # options, mappings, lazy.nvim, Codex
+│       └── plugins/                   # LSP, Git, UI et extras
 ├── scripts/
 │   ├── codex-popup
 │   ├── install-meslolgs-fonts.ps1
 │   └── windows-terminal-maximize.ps1
+├── tests/                             # sauvegarde/restauration et JSONC
 ├── tmux/.tmux.conf
 ├── zsh/.p10k.zsh
 ├── zsh/.zshrc
 └── setup.sh
+```
+
+## CI
+
+Le workflow [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) est lancé par GitHub à chaque push et pull request. Il vérifie :
+
+- Bash, Zsh et ShellCheck ;
+- le chargement de la configuration tmux ;
+- l’installation et la restauration dans un `$HOME` temporaire ;
+- PowerShell et la préservation du JSONC Windows Terminal ;
+- le formatage Lua et le démarrage headless de Neovim.
+
+Tests locaux principaux :
+
+```sh
+./tests/test-installer.sh
+powershell.exe -File "$(wslpath -w "$PWD/tests/test-jsonc.ps1")"
+shellcheck setup.sh tests/test-installer.sh scripts/codex-popup
+~/.local/share/nvim/mason/bin/stylua --check nvim/.config/nvim
 ```
